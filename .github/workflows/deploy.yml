@@ -8,42 +8,41 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Execute Remote SSH Commands
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.9
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          username: ec2-user
+          key: ${{ secrets.EC2_KEY }}
           port: 22
           script: |
-            set -e
-            cd ${{ secrets.APP_PATH }}/initial
-
-            echo "📦 Pulling latest code..."
-            # Using -f to force pull if there are local permission changes
-            sudo git fetch origin master
+            cd /var/www/releases/initial
+            
+            echo "🚚 Fetching latest code..."
+            sudo git fetch --all
             sudo git reset --hard origin/master
 
             echo "📦 Installing dependencies..."
             sudo composer install --no-dev --optimize-autoloader
 
-            echo "🔧 Laravel optimizations..."
-            # We use sudo -u nginx to ensure the webserver owns the cache files
+            echo "🗄️ Running migrations..."
             sudo php artisan migrate --force
-            sudo php artisan optimize:clear
-            sudo php artisan optimize
-            
-            echo "🔁 Syncing Permissions..."
+
+            echo "⚡ Optimizing Laravel..."
+            sudo php artisan config:cache
+            sudo php artisan route:cache
+            sudo php artisan view:cache
+
+            echo "🔑 Fixing permissions for Qore LocalTransfer logs..."
+            # This ensures the nginx user (which runs PHP-FPM) can still write to storage
             sudo chown -R nginx:nginx storage bootstrap/cache
             sudo chmod -R 775 storage
 
-            echo "🔁 Restarting services..."
+            echo "🔄 Reloading PHP-FPM..."
             sudo systemctl reload php-fpm
-            sudo systemctl reload nginx
-
-            echo "✅ Deployment successful!"
+            
+            echo "✅ Deployment complete!"
