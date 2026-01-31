@@ -20,30 +20,32 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           port: 22
           script: |
-            # Exit immediately if a command fails
             set -e
-
             cd /var/www/releases/initial
 
-            echo "📦 Syncing Repository..."
+            echo "📦 Syncing Code from GitHub..."
+            # We use sudo to avoid permission issues in /var/www
             sudo git fetch --all
             sudo git reset --hard origin/master
 
-            echo "🚚 Installing Dependencies..."
+            echo "🚚 Installing Composer Dependencies..."
             sudo composer install --no-dev --optimize-autoloader
 
-            echo "⚙️ Running Migrations..."
+            echo "⚙️ Running Database Migrations..."
+            # Essential for Qore LocalTransfer updates
             sudo php artisan migrate --force
 
-            echo "✨ Optimizing Application..."
+            echo "✨ Optimizing Laravel Cache..."
             sudo php artisan config:cache
             sudo php artisan route:cache
             sudo php artisan view:cache
 
-            echo "🔐 Resetting Permissions..."
-            # Critical: Ensures the nginx user can write logs/cache
+            echo "🔐 Fixing Permissions..."
+            # This prevents the 500 error by ensuring nginx owns the logs
             sudo chown -R nginx:nginx storage bootstrap/cache
             sudo chmod -R 775 storage
             
-            echo "🔄 Refreshing Services..."
+            echo "🔄 Reloading PHP..."
             sudo systemctl reload php-fpm
+            
+            echo "✅ Deployment Successful!"
