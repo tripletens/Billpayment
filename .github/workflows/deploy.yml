@@ -20,29 +20,30 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           port: 22
           script: |
+            # Exit immediately if a command fails
+            set -e
+
             cd /var/www/releases/initial
-            
-            echo "🚚 Fetching latest code..."
+
+            echo "📦 Syncing Repository..."
             sudo git fetch --all
             sudo git reset --hard origin/master
 
-            echo "📦 Installing dependencies..."
+            echo "🚚 Installing Dependencies..."
             sudo composer install --no-dev --optimize-autoloader
 
-            echo "🗄️ Running migrations..."
+            echo "⚙️ Running Migrations..."
             sudo php artisan migrate --force
 
-            echo "⚡ Optimizing Laravel..."
+            echo "✨ Optimizing Application..."
             sudo php artisan config:cache
             sudo php artisan route:cache
             sudo php artisan view:cache
 
-            echo "🔑 Fixing permissions for Qore LocalTransfer logs..."
-            # This ensures the nginx user (which runs PHP-FPM) can still write to storage
+            echo "🔐 Resetting Permissions..."
+            # Critical: Ensures the nginx user can write logs/cache
             sudo chown -R nginx:nginx storage bootstrap/cache
             sudo chmod -R 775 storage
-
-            echo "🔄 Reloading PHP-FPM..."
-            sudo systemctl reload php-fpm
             
-            echo "✅ Deployment complete!"
+            echo "🔄 Refreshing Services..."
+            sudo systemctl reload php-fpm
