@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -16,17 +17,20 @@ jobs:
         uses: appleboy/ssh-action@v0.1.9
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          username: ${{ secrets.Secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
+            # Stop execution if any command fails
             set -e
-            # Navigates to your app path (e.g., /var/www/releases)
+
+            # Navigate to the application path
             cd ${{ secrets.APP_PATH }}/initial
 
             echo "🚀 Starting Deployment for Qore LocalTransfer..."
-            
-            echo "📦 Pulling code from GitHub..."
+
+            echo "📦 Syncing code from GitHub..."
+            # Using sudo to handle permissions in /var/www
             sudo git fetch --all
             sudo git reset --hard origin/master
 
@@ -41,8 +45,8 @@ jobs:
             sudo php artisan route:cache
             sudo php artisan view:cache
 
-            echo "🔐 Fixing ownership for nginx..."
-            # Ensures the webserver can write to logs and cache
+            echo "🔐 Resetting folder permissions..."
+            # Ensures the nginx user can write to storage and cache
             sudo chown -R nginx:nginx storage bootstrap/cache
             sudo chmod -R 775 storage
             
