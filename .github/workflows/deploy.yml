@@ -16,36 +16,37 @@ jobs:
         uses: appleboy/ssh-action@v0.1.9
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_KEY }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
             set -e
-            cd /var/www/releases/initial
+            # Navigates to your app path (e.g., /var/www/releases)
+            cd ${{ secrets.APP_PATH }}/initial
 
-            echo "📦 Syncing Code from GitHub..."
-            # We use sudo to avoid permission issues in /var/www
+            echo "🚀 Starting Deployment for Qore LocalTransfer..."
+            
+            echo "📦 Pulling code from GitHub..."
             sudo git fetch --all
             sudo git reset --hard origin/master
 
-            echo "🚚 Installing Composer Dependencies..."
+            echo "🚚 Installing dependencies..."
             sudo composer install --no-dev --optimize-autoloader
 
-            echo "⚙️ Running Database Migrations..."
-            # Essential for Qore LocalTransfer updates
+            echo "🗄️ Running migrations..."
             sudo php artisan migrate --force
 
-            echo "✨ Optimizing Laravel Cache..."
+            echo "⚡ Optimizing Laravel..."
             sudo php artisan config:cache
             sudo php artisan route:cache
             sudo php artisan view:cache
 
-            echo "🔐 Fixing Permissions..."
-            # This prevents the 500 error by ensuring nginx owns the logs
+            echo "🔐 Fixing ownership for nginx..."
+            # Ensures the webserver can write to logs and cache
             sudo chown -R nginx:nginx storage bootstrap/cache
             sudo chmod -R 775 storage
             
-            echo "🔄 Reloading PHP..."
+            echo "🔄 Reloading PHP-FPM..."
             sudo systemctl reload php-fpm
             
             echo "✅ Deployment Successful!"
