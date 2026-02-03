@@ -20,7 +20,8 @@ class VerifyApiKey
         $validKey = config('services.lytepay.api_key');
 
         // If no key or invalid key, reject
-        if (!$providedKey || $providedKey !== $validKey) {
+        // Use hash_equals to prevent timing attacks
+        if (!$providedKey || !hash_equals((string) $validKey, (string) $providedKey)) {
             return response()->json([
                 'status' => false,
                 'message' => 'Unauthorized: Invalid API key.'

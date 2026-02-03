@@ -11,7 +11,7 @@ class ElectricityVendRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,11 @@ class ElectricityVendRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'meter_number' => 'required|string|max:20',
+            'disco' => 'required|string|in:AEDC,EKEDC,IKEDC,IBEDC,JEDC,KEDCO,KAEDCO,PHED,EEDC,BEDC', // Example list
+            'amount' => 'required|numeric|min:100',
+            'phone' => 'required|string|max:15',
+            'customer_name' => 'required|string|max:255',
         ];
     }
 }

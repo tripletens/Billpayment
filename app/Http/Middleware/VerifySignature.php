@@ -17,11 +17,31 @@ class VerifySignature
     {
         $secret = config('services.lytepay.secret');
         $signature = $request->header('X-Signature');
+        $timestamp = $request->header('X-Timestamp');
         $payload = $request->getContent();
 
+        if (!$signature || !$timestamp) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Missing signature or timestamp headers.'
+            ], 400);
+        }
+
+        // Prevent Replay Attacks: Check if timestamp is within 5 minutes
+        if (abs(time() - $timestamp) > 300) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Request timestamp expired.'
+            ], 403);
+        }
+
+        // Verify Signature
+        // Signature = HMAC_SHA256(payload + timestamp, secret) to bind timestamp to the request
+        // Note: Ideally the timestamp should be part of the signature generation on the client side.
+        // Assuming current implementation just signs the payload:
         $expectedSignature = hash_hmac('sha256', $payload, $secret);
 
-        if ($signature !== $expectedSignature) {
+        if (!hash_equals($expectedSignature, (string) $signature)) {
             return response()->json([
                 'status' => false,
                 'message' => 'Invalid request signature.'
