@@ -2,12 +2,18 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Mail;
+use App\Factories\EmailProviderFactory;
+use Illuminate\Mail\Mailable;
 
 class EmailService
 {
-    public function send(string $to, $mailable)
+    public function __construct(
+        protected EmailProviderFactory $providerFactory
+    ) {}
+
+    public function send(string $to, Mailable $mailable, ?string $providerName = null): void
     {
-        Mail::to($to)->send($mailable);
+        $provider = $this->providerFactory->make($providerName);
+        $provider->send($to, $mailable);
     }
 }

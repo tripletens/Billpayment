@@ -3,17 +3,21 @@
 namespace App\Services;
 
 use App\DTOs\ElectricityVendDTO;
+use App\Factories\BillPaymentProviderFactory;
 use App\Repositories\ElectricityRepository;
-use Illuminate\Support\Facades\Http;
 
 class ElectricityService
 {
     public function __construct(
-        protected ElectricityRepository $repository
+        protected ElectricityRepository $repository,
+        protected BillPaymentProviderFactory $providerFactory
     ) {}
 
-    public function vend(ElectricityVendDTO $dto)
+    public function vend(ElectricityVendDTO $dto, ?string $providerName = null)
     {
+        // Get the provider (uses default from config if not specified)
+        $provider = $this->providerFactory->make($providerName);
+
         // 1. Create local transaction with 'pending' status
         $transaction = $this->repository->storeTransaction([
             'reference' => uniqid('ref_'),
@@ -25,28 +29,17 @@ class ElectricityService
                 'disco' => $dto->disco,
                 'phone' => $dto->phone,
                 'customer_name' => $dto->customerName,
+                'provider' => $provider->getName(),
             ]
         ]);
 
         try {
-            // 2. Call External API
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . config('services.buypower.token'),
-            ])->post(config('services.buypower.base_url') . '/vend/electricity', [
-                'meter_number' => $dto->meterNumber,
-                'disco' => $dto->disco,
-                'amount' => $dto->amount,
-                'phone' => $dto->phone,
-                'name' => $dto->customerName,
-                'reference' => $transaction->reference, // Pass our reference if supported
-            ]);
-
-            $result = $response->json();
+            // 2. Use the provider to vend electricity
+            $result = $provider->vendElectricity($dto);
 
             // 3. Update Transaction Status based on response
-            if ($response->successful() && ($result['status'] ?? false) === true) {
+            if (($result['status'] ?? false) === true || ($result['responseCode'] ?? '') === '00') {
                 $transaction->status = 'success';
-                // Might want to store external_reference here if available
             } else {
                 $transaction->status = 'failed';
             }
@@ -71,3 +64,4 @@ class ElectricityService
         }
     }
 }
+
