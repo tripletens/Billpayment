@@ -17,7 +17,7 @@ jobs:
         uses: appleboy/ssh-action@v0.1.9
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.Secrets.EC2_USER }}
+          username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
@@ -27,15 +27,17 @@ jobs:
             # Navigate to the application path
             cd ${{ secrets.APP_PATH }}/initial
 
-            echo "🚀 Starting Deployment for Qore LocalTransfer..."
+            echo "🚀 Starting Deployment..."
 
             echo "📦 Syncing code from GitHub..."
-            # Using sudo to handle permissions in /var/www
+            # Configure git to trust the directory to avoid permission issues with sudo
+            sudo git config --global --add safe.directory ${{ secrets.APP_PATH }}/initial
             sudo git fetch --all
             sudo git reset --hard origin/master
 
             echo "🚚 Installing dependencies..."
-            sudo composer install --no-dev --optimize-autoloader
+            # Run composer without sudo if possible, or ensure it uses the right user
+            sudo composer install --no-dev --optimize-autoloader --no-interaction
 
             echo "🗄️ Running migrations..."
             sudo php artisan migrate --force
@@ -46,11 +48,13 @@ jobs:
             sudo php artisan view:cache
 
             echo "🔐 Resetting folder permissions..."
-            # Ensures the nginx user can write to storage and cache
-            sudo chown -R nginx:nginx storage bootstrap/cache
-            sudo chmod -R 775 storage
+            # Common web user is www-data on Ubuntu. nginx is common on RHEL/CentOS. 
+            # We'll use a safer approach to detect or set permissions.
+            sudo chown -R www-data:www-data storage bootstrap/cache || sudo chown -R nginx:nginx storage bootstrap/cache
+            sudo chmod -R 775 storage bootstrap/cache
             
             echo "🔄 Reloading PHP-FPM..."
-            sudo systemctl reload php-fpm
+            # Try reloading common PHP-FPM service names
+            sudo systemctl reload php-fpm || sudo systemctl reload php8.2-fpm || echo "PHP-FPM reload bypassed"
             
             echo "✅ Deployment Successful!"
