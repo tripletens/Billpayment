@@ -4,8 +4,8 @@ namespace App\Factories;
 
 use App\Contracts\BillPaymentProviderInterface;
 use App\Providers\BillPayment\BuyPowerProvider;
-use App\Providers\BillPayment\VTPassProvider;
 use App\Providers\BillPayment\InterswitchProvider;
+use App\Providers\BillPayment\PaystackProvider;
 use InvalidArgumentException;
 
 class BillPaymentProviderFactory
@@ -14,6 +14,7 @@ class BillPaymentProviderFactory
         'buypower' => BuyPowerProvider::class,
         'vtpass' => VTPassProvider::class,
         'interswitch' => InterswitchProvider::class,
+        'paystack' => PaystackProvider::class,
     ];
 
     /**

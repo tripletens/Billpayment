@@ -2,12 +2,14 @@
 
 namespace App\Http\Middleware;
 
+use App\Traits\ApiResponseTrait;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class VerifySignature
 {
+    use ApiResponseTrait;
     /**
      * Handle an incoming request.
      *
@@ -21,18 +23,12 @@ class VerifySignature
         $payload = $request->getContent();
 
         if (!$signature || !$timestamp) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Missing signature or timestamp headers.'
-            ], 400);
+            return $this->error('Missing signature or timestamp headers.', 400);
         }
 
         // Prevent Replay Attacks: Check if timestamp is within 5 minutes
         if (abs(time() - $timestamp) > 300) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Request timestamp expired.'
-            ], 403);
+            return $this->error('Request timestamp expired.', 403);
         }
 
         // Verify Signature
@@ -42,10 +38,7 @@ class VerifySignature
         $expectedSignature = hash_hmac('sha256', $payload, $secret);
 
         if (!hash_equals($expectedSignature, (string) $signature)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Invalid request signature.'
-            ], 403);
+            return $this->error('Invalid request signature.', 403);
         }
         
         return $next($request);

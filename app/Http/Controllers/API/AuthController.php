@@ -2,19 +2,32 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\RegisterRequest;
-use App\Http\Requests\Auth\LoginRequest;
-use App\DTOs\Auth\RegisterUserDTO;
 use App\DTOs\Auth\LoginUserDTO;
+use App\DTOs\Auth\RegisterUserDTO;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 
 class AuthController extends Controller
 {
+    private array $response = [];
+
     public function __construct(
         protected AuthService $authService
-    ) {}
+    ) {
+        $this->response = [
+            'status' => false,
+            'code' => 500,
+            'message' => 'An unexpected error occurred.',
+        ];
+    }
+
+    public function user(Request $request)
+    {
+        return $this->success('User profile retrieved successfully.', 200, $request->user());
+    }
 
     public function register(RegisterRequest $request): JsonResponse
     {
@@ -29,6 +42,7 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => true,
+            'code' => 201,
             'message' => 'User registered successfully.',
             'data' => $result,
         ], 201);
@@ -45,6 +59,7 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => true,
+            'code' => 200,
             'message' => 'Login successful.',
             'data' => $result,
         ]);
@@ -53,11 +68,12 @@ class AuthController extends Controller
     public function forgotPassword(\App\Http\Requests\Auth\ForgotPasswordRequest $request): JsonResponse
     {
         $dto = new \App\DTOs\Auth\ForgotPasswordDTO($request->email);
-        
+
         $this->authService->forgotPassword($dto);
 
         return response()->json([
             'status' => true,
+            'code' => 200,
             'message' => 'Reset link sent.',
         ]);
     }
@@ -74,6 +90,7 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => true,
+            'code' => 200,
             'message' => 'Password reset successfully.',
         ]);
     }

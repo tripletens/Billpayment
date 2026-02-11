@@ -22,6 +22,8 @@ return [
     'buypower' => [
         'base_url' => env('BUYPOWER_BASE_URL', 'https://api.buypower.ng'),
         'token' => env('BUYPOWER_TOKEN'),
+        'test_base_url' => env('BUYPOWER_TEST_BASE_URL', 'https://idev.buypower.ng/v2'),
+        'test_token' => env('BUYPOWER_TEST_TOKEN')
     ],
 
     /*

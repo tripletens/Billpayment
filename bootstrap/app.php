@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\VerifyApiKey;
 use App\Http\Middleware\VerifySignature;
+use App\Http\Middleware\VerifyServerToken;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,11 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
         $middleware->alias([
             'verify.api.key' => VerifyApiKey::class,
             'verify.signature' => VerifySignature::class,
-            'verify.server.token' => \App\Http\Middleware\VerifyServerToken::class,
+            'verify.server.token' => VerifyServerToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

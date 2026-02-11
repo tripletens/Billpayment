@@ -1,12 +1,10 @@
 <?php
 
-use App\Http\Controllers\API\ElectricityController;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+Route::get('/user', [\App\Http\Controllers\API\AuthController::class, 'user'])
+    ->middleware('auth:sanctum');
 
 Route::prefix('auth')->group(function () {
     Route::post('/register', [\App\Http\Controllers\API\AuthController::class, 'register']);
@@ -19,7 +17,7 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::middleware(['verify.server.token', 'verify.api.key', 'verify.signature'])->group(function () {
-    Route::post('/vend/electricity', [ElectricityController::class, 'vend']);
+    Route::post('/vend/electricity', [\App\Http\Controllers\API\BillPaymentController::class, 'vendElectricity']);
     Route::post('/vend/entertainment', [\App\Http\Controllers\API\BillPaymentController::class, 'vendEntertainment']);
     Route::post('/vend/telecoms', [\App\Http\Controllers\API\BillPaymentController::class, 'vendTelecoms']);
     // Admin Reporting

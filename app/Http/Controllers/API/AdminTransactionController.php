@@ -5,12 +5,8 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Transaction;
-use App\Traits\ApiResponseTrait;
-
 class AdminTransactionController extends Controller
 {
-    use ApiResponseTrait;
-
     public function index(Request $request)
     {
         $query = Transaction::query();

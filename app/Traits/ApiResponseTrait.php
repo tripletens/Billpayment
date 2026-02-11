@@ -8,8 +8,9 @@ trait ApiResponseTrait
     {
         return response()->json([
             'status' => true,
+            'code' => $code,
             'message' => $message,
-            'data' => $data
+            'data' => $data,
         ], $code);
     }
 
@@ -17,7 +18,8 @@ trait ApiResponseTrait
     {
         return response()->json([
             'status' => false,
-            'message' => $message
+            'code' => $code,
+            'message' => $message,
         ], $code);
     }
 }

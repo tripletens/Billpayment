@@ -16,7 +16,7 @@ class EntertainmentService
         // 1. Create Transaction (Pending)
         $transaction = Transaction::create([
             'reference' => uniqid('ref_'),
-            'type' => 'entertainment', // or specific like 'cable_tv'
+            'type' => $data['type'] ?? 'cable_tv', // Use dynamic type
             'amount' => $data['amount'],
             'status' => 'pending',
             'meta' => $data,
