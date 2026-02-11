@@ -13,7 +13,9 @@ class ElectricityRepository
             'type' => 'electricity',
             'amount' => $data['amount'] ?? 0,
             'status' => $data['status'] ?? 'pending',
-            'meta' => json_encode($data),
+            'meta' => $data['meta'] ?? $data,
+            'provider_name' => $data['provider_name'] ?? ($data['meta']['provider'] ?? null),
+            'user_id' => $data['user_id'] ?? null,
         ]);
     }
 }

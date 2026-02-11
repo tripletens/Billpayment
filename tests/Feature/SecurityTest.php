@@ -15,28 +15,45 @@ class SecurityTest extends TestCase
         parent::setUp();
         Config::set('services.lytepay.api_key', 'test_api_key');
         Config::set('services.lytepay.secret', 'test_secret');
+        Config::set('services.internal.server_token', 'test_server_token');
+    }
+
+    public function test_request_rejected_without_server_token()
+    {
+        $response = $this->withHeaders([
+            'X-API-KEY' => 'test_api_key',
+        ])->postJson('/api/vend/electricity', []);
+
+        $response->assertStatus(401)
+            ->assertJson(['message' => 'Unauthorized: Invalid internal server token.']);
     }
 
     public function test_request_rejected_without_api_key()
     {
-        $response = $this->postJson('/api/vend/electricity', []);
+        $response = $this->withHeaders([
+            'X-SERVER-TOKEN' => 'test_server_token',
+        ])->postJson('/api/vend/electricity', []);
         $response->assertStatus(401);
     }
 
     public function test_request_rejected_with_invalid_api_key()
     {
-        $response = $this->withHeader('X-API-KEY', 'wrong_key')
-                         ->postJson('/api/vend/electricity', []);
+        $response = $this->withHeaders([
+            'X-API-KEY' => 'wrong_key',
+            'X-SERVER-TOKEN' => 'test_server_token',
+        ])->postJson('/api/vend/electricity', []);
         $response->assertStatus(401);
     }
 
     public function test_request_rejected_without_signature_or_timestamp()
     {
-        $response = $this->withHeader('X-API-KEY', 'test_api_key')
-                         ->postJson('/api/vend/electricity', []);
-        
+        $response = $this->withHeaders([
+            'X-API-KEY' => 'test_api_key',
+            'X-SERVER-TOKEN' => 'test_server_token',
+        ])->postJson('/api/vend/electricity', []);
+
         // Should be 400 because of missing headers in VerifySignature
-        $response->assertStatus(400); 
+        $response->assertStatus(400);
     }
 
     public function test_request_rejected_with_expired_timestamp()
@@ -49,10 +66,11 @@ class SecurityTest extends TestCase
             'X-API-KEY' => 'test_api_key',
             'X-Signature' => $signature,
             'X-Timestamp' => $timestamp,
+            'X-SERVER-TOKEN' => 'test_server_token',
         ])->postJson('/api/vend/electricity', ['meter_number' => '123']);
 
         $response->assertStatus(403)
-                 ->assertJson(['message' => 'Request timestamp expired.']);
+            ->assertJson(['message' => 'Request timestamp expired.']);
     }
 
     public function test_request_rejected_with_invalid_signature()
@@ -65,10 +83,11 @@ class SecurityTest extends TestCase
             'X-API-KEY' => 'test_api_key',
             'X-Signature' => $signature,
             'X-Timestamp' => $timestamp,
+            'X-SERVER-TOKEN' => 'test_server_token',
         ])->postJson('/api/vend/electricity', ['meter_number' => '123']);
 
         $response->assertStatus(403)
-                 ->assertJson(['message' => 'Invalid request signature.']);
+            ->assertJson(['message' => 'Invalid request signature.']);
     }
 
     public function test_validation_fails_with_invalid_data()
@@ -86,10 +105,53 @@ class SecurityTest extends TestCase
             'X-API-KEY' => 'test_api_key',
             'X-Signature' => $signature,
             'X-Timestamp' => $timestamp,
+            'X-SERVER-TOKEN' => 'test_server_token',
         ])->postJson('/api/vend/electricity', $data);
 
         // Should pass middleware but fail validation
         $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['meter_number', 'amount']);
+            ->assertJsonValidationErrors(['meter_number', 'amount']);
+    }
+
+    public function test_successful_electricity_vend()
+    {
+        // Mock the ElectricityService
+        $this->mock(\App\Services\ElectricityService::class, function ($mock) {
+            $transaction = new \App\Models\Transaction();
+            $transaction->id = 1;
+            $transaction->reference = 'test_ref_123';
+            $transaction->status = 'success';
+            $transaction->amount = 1000;
+            // Mock created_at/updated_at if needed, but probably not for simple JSON assertion unless strictly checked
+
+            $mock->shouldReceive('vend')
+                ->once()
+                ->andReturn($transaction);
+        });
+
+        $data = [
+            'meter_number' => '1234567890',
+            'disco' => 'AEDC',
+            'amount' => 1000,
+            'phone' => '08012345678',
+            'customer_name' => 'John Doe',
+        ];
+
+        $payload = json_encode($data);
+        $timestamp = time();
+        $signature = hash_hmac('sha256', $payload, 'test_secret');
+
+        $response = $this->withHeaders([
+            'X-API-KEY' => 'test_api_key',
+            'X-Signature' => $signature,
+            'X-Timestamp' => $timestamp,
+            'X-SERVER-TOKEN' => 'test_server_token',
+        ])->postJson('/api/vend/electricity', $data);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('status', true)
+            ->assertJson([
+                'message' => 'Electricity vend initiated successfully.',
+            ]);
     }
 }

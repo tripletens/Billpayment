@@ -18,6 +18,11 @@ Route::prefix('auth')->group(function () {
     })->name('password.reset');
 });
 
-Route::middleware(['verify.api.key', 'verify.signature'])->group(function () {
+Route::middleware(['verify.server.token', 'verify.api.key', 'verify.signature'])->group(function () {
     Route::post('/vend/electricity', [ElectricityController::class, 'vend']);
+    Route::post('/vend/entertainment', [\App\Http\Controllers\API\BillPaymentController::class, 'vendEntertainment']);
+    Route::post('/vend/telecoms', [\App\Http\Controllers\API\BillPaymentController::class, 'vendTelecoms']);
+
+    // Admin Reporting
+    Route::get('/admin/transactions', [\App\Http\Controllers\API\AdminTransactionController::class, 'index']);
 });

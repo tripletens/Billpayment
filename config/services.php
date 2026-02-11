@@ -39,4 +39,8 @@ return [
         'api_key' => env('LYTEPAY_API_KEY'),
         'secret' => env('LYTEPAY_SECRET'),
     ],
+
+    'internal' => [
+        'server_token' => env('INTERNAL_SERVER_TOKEN'),
+    ],
 ];

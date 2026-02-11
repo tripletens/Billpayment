@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'verify.api.key' => VerifyApiKey::class,
             'verify.signature' => VerifySignature::class,
+            'verify.server.token' => \App\Http\Middleware\VerifyServerToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
