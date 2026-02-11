@@ -22,7 +22,6 @@ Route::middleware(['verify.server.token', 'verify.api.key', 'verify.signature'])
     Route::post('/vend/electricity', [ElectricityController::class, 'vend']);
     Route::post('/vend/entertainment', [\App\Http\Controllers\API\BillPaymentController::class, 'vendEntertainment']);
     Route::post('/vend/telecoms', [\App\Http\Controllers\API\BillPaymentController::class, 'vendTelecoms']);
-
     // Admin Reporting
     Route::get('/admin/transactions', [\App\Http\Controllers\API\AdminTransactionController::class, 'index']);
 });
