@@ -5,6 +5,7 @@ namespace App\Providers\BillPayment;
 use App\Contracts\BillPaymentProviderInterface;
 use App\DTOs\ElectricityVendDTO;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class BuyPowerProvider implements BillPaymentProviderInterface
 {
@@ -32,7 +33,9 @@ class BuyPowerProvider implements BillPaymentProviderInterface
             'name' => $dto->customerName,
         ];
 
-        \Log::info('BuyPower API Request', [
+        // dd($payload);
+
+        Log::info('BuyPower API Request', [
             'url' => $this->baseUrl . '/vend',
             'payload' => $payload
         ]);
@@ -43,7 +46,7 @@ class BuyPowerProvider implements BillPaymentProviderInterface
 
         $result = $response->json() ?? [];
 
-        \Log::info('BuyPower API Response', [
+        Log::info('BuyPower API Response', [
             'status' => $response->status(),
             'body' => $result
         ]);

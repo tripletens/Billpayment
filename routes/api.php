@@ -1,24 +1,27 @@
 <?php
 
+use App\Http\Controllers\API\AdminTransactionController;
+use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\BillPaymentController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', [\App\Http\Controllers\API\AuthController::class, 'user'])
+Route::get('/user', [AuthController::class, 'user'])
     ->middleware('auth:sanctum');
 
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [\App\Http\Controllers\API\AuthController::class, 'register']);
-    Route::post('/login', [\App\Http\Controllers\API\AuthController::class, 'login']);
-    Route::post('/forgot-password', [\App\Http\Controllers\API\AuthController::class, 'forgotPassword']);
-    Route::post('/reset-password', [\App\Http\Controllers\API\AuthController::class, 'resetPassword']);
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     Route::get('/reset-password/{token}', function ($token) {
         return response()->json(['token' => $token]);
     })->name('password.reset');
 });
 
 Route::prefix('v1')->middleware(['verify.server.token', 'verify.api.key', 'verify.signature'])->group(function () {
-    Route::post('/vend/electricity', [\App\Http\Controllers\API\BillPaymentController::class, 'vendElectricity']);
-    Route::post('/vend/entertainment', [\App\Http\Controllers\API\BillPaymentController::class, 'vendEntertainment']);
-    Route::post('/vend/telecoms', [\App\Http\Controllers\API\BillPaymentController::class, 'vendTelecoms']);
+    Route::post('/vend/electricity', [BillPaymentController::class, 'vendElectricity']);
+    Route::post('/vend/entertainment', [BillPaymentController::class, 'vendEntertainment']);
+    Route::post('/vend/telecoms', [BillPaymentController::class, 'vendTelecoms']);
     // Admin Reporting
-    Route::get('/admin/transactions', [\App\Http\Controllers\API\AdminTransactionController::class, 'index']);
+    Route::get('/admin/transactions', [AdminTransactionController::class, 'index']);
 });

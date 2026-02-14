@@ -5,6 +5,7 @@ namespace App\Services;
 use App\DTOs\ElectricityVendDTO;
 use App\Factories\BillPaymentProviderFactory;
 use App\Repositories\ElectricityRepository;
+use Illuminate\Support\Facades\Log;
 
 class ElectricityService
 {
@@ -18,7 +19,7 @@ class ElectricityService
         // Get the provider (uses default from config if not specified)
         $provider = $this->providerFactory->make($providerName);
 
-        \Log::info('Electricity Vending Started', [
+        Log::info('Electricity Vending Started', [
             'meter' => $dto->meterNumber,
             'amount' => $dto->amount,
             'provider' => $provider->getName()
@@ -43,6 +44,8 @@ class ElectricityService
             // 2. Use the provider to vend electricity
             $result = $provider->vendElectricity($dto);
 
+            // dd($result);
+
             // 3. Update Transaction Status based on response
             if (($result['status'] ?? false) === true || ($result['responseCode'] ?? '') === '00' || ($result['responseCode'] ?? 0) == 200) {
                 $transaction->status = 'success';
@@ -50,7 +53,7 @@ class ElectricityService
                 $transaction->status = 'failed';
             }
 
-            \Log::info('Electricity Vending Completed', [
+            Log::info('Electricity Vending Completed', [
                 'reference' => $transaction->reference,
                 'status' => $transaction->status,
                 'response_message' => $result['message'] ?? 'No message'
@@ -66,7 +69,7 @@ class ElectricityService
             return $transaction;
 
         } catch (\Exception $e) {
-            \Log::error('Electricity Vending Error', [
+            Log::error('Electricity Vending Error', [
                 'meter' => $dto->meterNumber,
                 'error' => $e->getMessage()
             ]);

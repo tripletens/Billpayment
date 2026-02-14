@@ -11,7 +11,7 @@ class EntertainmentService
         protected BillPaymentProviderFactory $providerFactory
     ) {}
 
-    public function purchaseSubscription(array $data)
+    public function purchaseSubscription(array $data, ?string $provider = null)
     {
         // 1. Create Transaction (Pending)
         $transaction = Transaction::create([
@@ -20,13 +20,13 @@ class EntertainmentService
             'amount' => $data['amount'],
             'status' => 'pending',
             'meta' => $data,
-            'provider_name' => $data['provider'] ?? 'default',
+            'provider_name' => $provider ?? $data['provider'] ?? 'default',
             'user_id' => $data['user_id'] ?? null,
         ]);
 
         try {
             // 2. Process Purchase via Provider
-            $provider = $this->providerFactory->make($data['provider'] ?? null);
+            $provider = $this->providerFactory->make($provider ?? $data['provider'] ?? null);
             // $result = $provider->purchaseSubscription($data); // Method to be implemented in provider
             
             // Mocking success for now

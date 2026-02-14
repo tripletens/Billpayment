@@ -1,0 +1,58 @@
+{
+  "info": {
+    "name": "BillPayment API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Vend Entertainment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 100,\n  \"type\": \"cable_tv\",\n  \"smartcard_number\": \"1234567890\",\n  \"package_code\": \"basic\",\n  \"customer_name\": \"John Doe\",\n  \"phone\": \"08012345678\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/vend/entertainment",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "vend",
+            "entertainment"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Pre-request script to compute X-Timestamp and X-Signature (HMAC SHA256)",
+              "const secret = pm.environment.get('LYTEPAY_SECRET') || pm.collectionVariables.get('LYTEPAY_SECRET');",
+              "const apiKey = pm.environment.get('LYTEPAY_API_KEY') || pm.collectionVariables.get('LYTEPAY_API_KEY');",
+              "const serverToken = pm.environment.get('SERVER_TOKEN') || pm.collectionVariables.get('SERVER_TOKEN');",
+              "const payload = pm.request.body ? pm.request.body.raw : '';",
+              "const timestamp = Math.floor(Date.now() / 1000).toString();",
+              "const signature = CryptoJS.HmacSHA256(payload, secret).toString(CryptoJS.enc.Hex);",
+              "pm.request.headers.upsert({ key: 'X-Timestamp', value: timestamp });",
+              "pm.request.headers.upsert({ key: 'X-Signature', value: signature });",
+              "pm.request.headers.upsert({ key: 'X-API-KEY', value: apiKey });",
+              "pm.request.headers.upsert({ key: 'X-SERVER-TOKEN', value: serverToken });",
+              ""
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

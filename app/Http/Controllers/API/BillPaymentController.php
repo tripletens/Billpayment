@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Services\EntertainmentService;
 use App\Services\TelecomsService;
 use App\Services\ElectricityService;
 use App\DTOs\ElectricityVendDTO;
 use App\Http\Requests\ElectricityVendRequest;
+use App\Http\Requests\EntertainmentVendRequest;
+use App\Http\Requests\TelecomsVendRequest;
 
 class BillPaymentController extends Controller
 {
@@ -36,33 +37,39 @@ class BillPaymentController extends Controller
         return $this->success($transaction, 'Electricity vend initiated successfully.');
     }
 
-    public function vendEntertainment(Request $request)
+    public function vendEntertainment(EntertainmentVendRequest $request)
     {
-        $request->validate([
-            'amount' => 'required|numeric',
-            'provider' => 'nullable|string',
-            'type' => 'required|string', // e.g., 'cable_tv', 'internet'
-        ]);
-
+        // Validation already handled by EntertainmentVendRequest
+        // No need for duplicate validation here
+        
         try {
-            $transaction = $this->entertainmentService->purchaseSubscription($request->all());
+            // Allow provider override from request
+            $provider = $request->header('X-BILL-PROVIDER') ?? $request->input('provider');
+            
+            $transaction = $this->entertainmentService->purchaseSubscription(
+                $request->validated(), 
+                $provider
+            );
+            
             return $this->success($transaction, 'Entertainment purchase initiated successfully.');
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 500);
         }
     }
 
-    public function vendTelecoms(Request $request)
+    public function vendTelecoms(TelecomsVendRequest $request)
     {
-        $request->validate([
-            'amount' => 'required|numeric',
-            'type' => 'required|in:airtime,data',
-            'phone_number' => 'required|string',
-            'provider' => 'nullable|string',
-        ]);
-
+        // Validation already handled by TelecomsVendRequest
+        
         try {
-            $transaction = $this->telecomsService->purchaseAirtimeOrData($request->all());
+            // Allow provider override from request
+            $provider = $request->header('X-BILL-PROVIDER') ?? $request->input('provider');
+            
+            $transaction = $this->telecomsService->purchaseAirtimeOrData(
+                $request->validated(),
+                $provider
+            );
+            
             return $this->success($transaction, 'Telecoms purchase initiated successfully.');
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 500);
