@@ -6,6 +6,7 @@ use App\Contracts\BillPaymentProviderInterface;
 use App\Providers\BillPayment\BuyPowerProvider;
 use App\Providers\BillPayment\InterswitchProvider;
 use App\Providers\BillPayment\PaystackProvider;
+use App\Providers\BillPayment\VTPassProvider;
 use InvalidArgumentException;
 
 class BillPaymentProviderFactory

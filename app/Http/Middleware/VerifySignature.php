@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 class VerifySignature
 {
     use ApiResponseTrait;
+
     /**
      * Handle an incoming request.
      *
@@ -22,25 +23,26 @@ class VerifySignature
         $timestamp = $request->header('X-Timestamp');
         $payload = $request->getContent();
 
-        if (!$signature || !$timestamp) {
+        if (! $signature || ! $timestamp) {
             return $this->error('Missing signature or timestamp headers.', 400);
         }
 
+        if (! is_numeric($timestamp)) {
+            return $this->error('Invalid X-Timestamp format.', 400);
+        }
+
         // Prevent Replay Attacks: Check if timestamp is within 5 minutes
-        if (abs(time() - $timestamp) > 300) {
+        if (abs(time() - (int) $timestamp) > 300) {
             return $this->error('Request timestamp expired.', 403);
         }
 
         // Verify Signature
-        // Signature = HMAC_SHA256(payload + timestamp, secret) to bind timestamp to the request
-        // Note: Ideally the timestamp should be part of the signature generation on the client side.
-        // Assuming current implementation just signs the payload:
         $expectedSignature = hash_hmac('sha256', $payload, $secret);
 
-        if (!hash_equals($expectedSignature, (string) $signature)) {
+        if (! hash_equals($expectedSignature, (string) $signature)) {
             return $this->error('Invalid request signature.', 403);
         }
-        
+
         return $next($request);
     }
 }

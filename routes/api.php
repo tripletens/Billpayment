@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', [\App\Http\Controllers\API\AuthController::class, 'user'])
@@ -16,7 +15,7 @@ Route::prefix('auth')->group(function () {
     })->name('password.reset');
 });
 
-Route::middleware(['verify.server.token', 'verify.api.key', 'verify.signature'])->group(function () {
+Route::prefix('v1')->middleware(['verify.server.token', 'verify.api.key', 'verify.signature'])->group(function () {
     Route::post('/vend/electricity', [\App\Http\Controllers\API\BillPaymentController::class, 'vendElectricity']);
     Route::post('/vend/entertainment', [\App\Http\Controllers\API\BillPaymentController::class, 'vendEntertainment']);
     Route::post('/vend/telecoms', [\App\Http\Controllers\API\BillPaymentController::class, 'vendTelecoms']);

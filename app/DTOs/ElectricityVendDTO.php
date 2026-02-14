@@ -9,6 +9,7 @@ class ElectricityVendDTO
         public readonly string $disco,
         public readonly float $amount,
         public readonly string $customerName,
-        public readonly string $phone
+        public readonly string $phone,
+        public readonly ?string $email = null
     ) {}
 }

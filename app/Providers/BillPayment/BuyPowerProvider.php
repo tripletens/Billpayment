@@ -19,17 +19,54 @@ class BuyPowerProvider implements BillPaymentProviderInterface
 
     public function vendElectricity(ElectricityVendDTO $dto): array
     {
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ])->post($this->baseUrl . '/vend/electricity', [
-            'meter_number' => $dto->meterNumber,
-            'disco' => $dto->disco,
-            'amount' => $dto->amount,
+        $payload = [
+            'orderId' => \Illuminate\Support\Str::uuid()->toString(),
+            'meter' => $dto->meterNumber,
+            'disco' => $this->mapDisco($dto->disco),
             'phone' => $dto->phone,
+            'paymentType' => 'B2B',
+            'vendType' => 'PREPAID',
+            'vertical' => 'ELECTRICITY',
+            'amount' => (string) $dto->amount,
+            'email' => $dto->email ?? 'support@lytbills.com',
             'name' => $dto->customerName,
+        ];
+
+        \Log::info('BuyPower API Request', [
+            'url' => $this->baseUrl . '/vend',
+            'payload' => $payload
         ]);
 
-        return $response->json() ?? [];
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->post($this->baseUrl . '/vend', $payload);
+
+        $result = $response->json() ?? [];
+
+        \Log::info('BuyPower API Response', [
+            'status' => $response->status(),
+            'body' => $result
+        ]);
+
+        return $result;
+    }
+
+    protected function mapDisco(string $disco): string
+    {
+        $mapping = [
+            'AEDC' => 'ABUJA',
+            'EKEDC' => 'EKO',
+            'IKEDC' => 'IKEJA',
+            'IBEDC' => 'IBADAN',
+            'JEDC' => 'JOS',
+            'KEDCO' => 'KANO',
+            'KAEDCO' => 'KADUNA',
+            'PHED' => 'PORTHARCOURT',
+            'EEDC' => 'ENUGU',
+            'BEDC' => 'BENIN',
+        ];
+
+        return $mapping[strtoupper($disco)] ?? strtoupper($disco);
     }
 
     public function getName(): string

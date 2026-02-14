@@ -23,7 +23,7 @@ class MultiBillTest extends TestCase
 
     public function test_can_vend_entertainment_subscription()
     {
-        $response = $this->postJson('/api/vend/entertainment', [
+        $response = $this->postJson('/api/v1/vend/entertainment', [
             'type' => 'cable_tv',
             'provider' => 'vtpass',
             'amount' => 5000,
@@ -33,18 +33,18 @@ class MultiBillTest extends TestCase
         $response->assertStatus(200);
         
         $this->assertDatabaseHas('transactions', [
-            'type' => 'entertainment',
+            'type' => 'cable_tv',
             'amount' => 5000,
             'status' => 'success', // Mocked success
         ]);
         
-        $transaction = Transaction::where('type', 'entertainment')->first();
+        $transaction = Transaction::where('type', 'cable_tv')->first();
         $this->assertEquals('vtpass', $transaction->meta['provider']);
     }
 
     public function test_can_vend_telecoms_airtime()
     {
-        $response = $this->postJson('/api/vend/telecoms', [
+        $response = $this->postJson('/api/v1/vend/telecoms', [
             'type' => 'airtime',
             'phone_number' => '08012345678',
             'amount' => 500,
@@ -67,19 +67,19 @@ class MultiBillTest extends TestCase
         Transaction::create(['reference' => 'ref3', 'type' => 'airtime', 'amount' => 100, 'status' => 'success']);
 
         // Test Utilities Filter (should include electricity)
-        $response = $this->getJson('/api/admin/transactions?category=utilities');
+        $response = $this->getJson('/api/v1/admin/transactions?category=utilities');
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data.data');
         $this->assertEquals('electricity', $response->json('data.data.0.type'));
 
         // Test Entertainment Filter
-        $response = $this->getJson('/api/admin/transactions?category=entertainment');
+        $response = $this->getJson('/api/v1/admin/transactions?category=entertainment');
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data.data');
         $this->assertEquals('cable_tv', $response->json('data.data.0.type'));
 
         // Test Telecoms Filter
-        $response = $this->getJson('/api/admin/transactions?category=telecoms');
+        $response = $this->getJson('/api/v1/admin/transactions?category=telecoms');
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data.data');
         $this->assertEquals('airtime', $response->json('data.data.0.type'));

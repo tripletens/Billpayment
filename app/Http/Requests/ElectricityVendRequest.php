@@ -27,6 +27,7 @@ class ElectricityVendRequest extends FormRequest
             'amount' => 'required|numeric|min:100',
             'phone' => 'required|string|max:15',
             'customer_name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
         ];
     }
 }

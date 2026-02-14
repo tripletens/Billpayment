@@ -25,7 +25,8 @@ class BillPaymentController extends Controller
             $request->disco,
             $request->amount,
             $request->customer_name,
-            $request->phone
+            $request->phone,
+            $request->email
         );
 
         // Allow provider override from request
