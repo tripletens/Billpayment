@@ -11,7 +11,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Bind MailTrapService wrapper so it can be injected where expected.
+        $this->app->singleton(\App\Services\MailTrap\MailTrapService::class, function ($app) {
+            return new \App\Services\MailTrap\MailTrapService($app->make(\App\Services\EmailService::class));
+        });
     }
 
     /**

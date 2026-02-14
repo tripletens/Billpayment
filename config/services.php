@@ -43,4 +43,22 @@ return [
     'internal' => [
         'server_token' => env('INTERNAL_SERVER_TOKEN'),
     ],
+
+    /* Mail provider configuration for multi-provider email service */
+    'mail_provider' => env('MAIL_PROVIDER', 'mailtrap'),
+
+    'mailtrap' => [
+        'api_key' => env('MAILTRAP_API_KEY'),
+        'base_url' => env('MAILTRAP_BASE_URL', 'https://mailtrap.example/api/send'),
+    ],
+
+    'sendgrid' => [
+        'api_key' => env('SENDGRID_API_KEY'),
+    ],
+
+    'aws_ses' => [
+        'key' => env('AWS_SES_KEY'),
+        'secret' => env('AWS_SES_SECRET'),
+        'region' => env('AWS_SES_REGION', 'us-east-1'),
+    ],
 ];

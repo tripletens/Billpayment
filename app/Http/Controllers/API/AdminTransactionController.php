@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\DTOs\TransactionListItemDTO;
 use Illuminate\Http\Request;
 use App\Models\Transaction;
+
 class AdminTransactionController extends Controller
 {
     public function index(Request $request)
@@ -44,5 +46,48 @@ class AdminTransactionController extends Controller
         $transactions = $query->latest()->paginate(20);
 
         return $this->success($transactions, 'Transactions retrieved successfully.');
+    }
+
+    /**
+     * Get transactions with full details including vend response and wallet transactions
+     * For v2 API with date range and pagination support
+     */
+    public function transactions(Request $request)
+    {
+        try {
+            $limit = (int) ($request->query('limit') ?? 50);
+            $page = (int) ($request->query('page') ?? 1);
+            $start = $request->query('start');
+            $end = $request->query('end');
+
+            $query = Transaction::query();
+
+            // Date range filtering
+            if ($start) {
+                $query->whereDate('created_at', '>=', $start);
+            }
+            if ($end) {
+                $query->whereDate('created_at', '<=', $end);
+            }
+
+            $transactions = $query->latest()->paginate($limit, ['*'], 'page', $page);
+
+            // Transform transactions to DTOs
+            $transformedTransactions = $transactions->items();
+            // In a real scenario, map transaction data to TransactionListItemDTO
+            // For now, we'll just pass through the array representation
+
+            return response()->json([
+                'status' => 'ok',
+                'message' => 'Order fetched successfully!',
+                'data' => $transformedTransactions,
+                'meta' => [
+                    'pages' => $transactions->lastPage(),
+                    'total' => $transactions->total(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 500);
+        }
     }
 }

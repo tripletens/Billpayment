@@ -4,6 +4,7 @@ namespace App\Providers\BillPayment;
 
 use App\Contracts\BillPaymentProviderInterface;
 use App\DTOs\ElectricityVendDTO;
+use App\DTOs\TransactionResponseDTO;
 use Illuminate\Support\Facades\Http;
 
 class VTPassProvider implements BillPaymentProviderInterface
@@ -32,6 +33,45 @@ class VTPassProvider implements BillPaymentProviderInterface
             ]);
 
         return $response->json() ?? [];
+    }
+
+    public function checkMeter(string $meter, string $disco, string $vendType): \App\DTOs\MeterCheckResponseDTO
+    {
+        // VTPass meter check implementation
+        $response = Http::withBasicAuth($this->apiKey, $this->secret)
+            ->post($this->baseUrl . '/merchant-verify', [
+                'billersCode' => $meter,
+                'serviceID' => $this->mapDisco($disco),
+                'variation_code' => strtolower($vendType) === 'prepaid' ? 'prepaid' : 'postpaid',
+            ]);
+
+        $result = $response->json() ?? [];
+        return \App\DTOs\MeterCheckResponseDTO::fromArray($result);
+    }
+
+    public function getTransaction(string $orderId): TransactionResponseDTO
+    {
+        // VTPass transaction retrieval implementation
+        // Placeholder that returns default response structure
+        $response = [
+            'id' => 0,
+            'amountGenerated' => 0,
+            'disco' => 'N/A',
+            'debtAmount' => 0,
+            'debtRemaining' => 0,
+            'orderId' => $orderId,
+            'receiptNo' => 'N/A',
+            'tax' => 0,
+            'vendTime' => now()->toIso8601String(),
+            'token' => 'N/A',
+            'totalAmountPaid' => 0,
+            'units' => 0,
+            'vendAmount' => 0,
+            'vendRef' => $orderId,
+            'responseCode' => 'PENDING',
+            'responseMessage' => 'Transaction status not available from VTPass',
+        ];
+        return TransactionResponseDTO::fromArray($response);
     }
 
     public function getName(): string

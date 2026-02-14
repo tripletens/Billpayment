@@ -53,6 +53,239 @@
           }
         }
       ]
+    },
+    {
+      "name": "Check Meter",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/check/meter?meter=88888888880&disco=AEDC&vendType=PREPAID",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "check",
+            "meter"
+          ],
+          "query": [
+            {
+              "key": "meter",
+              "value": "88888888880"
+            },
+            {
+              "key": "disco",
+              "value": "AEDC",
+              "description": "Distribution company code (AEDC, EKEDC, IKEDC, IBEDC, JEDC, KEDCO, KAEDCO, PHED, EEDC, BEDC)"
+            },
+            {
+              "key": "vendType",
+              "value": "PREPAID",
+              "description": "Vend type (PREPAID or POSTPAID)"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Pre-request script to compute X-Timestamp and X-Signature (HMAC SHA256)",
+              "const secret = pm.environment.get('LYTEPAY_SECRET') || pm.collectionVariables.get('LYTEPAY_SECRET');",
+              "const apiKey = pm.environment.get('LYTEPAY_API_KEY') || pm.collectionVariables.get('LYTEPAY_API_KEY');",
+              "const serverToken = pm.environment.get('SERVER_TOKEN') || pm.collectionVariables.get('SERVER_TOKEN');",
+              "const payload = '';",
+              "const timestamp = Math.floor(Date.now() / 1000).toString();",
+              "const signature = CryptoJS.HmacSHA256(payload, secret).toString(CryptoJS.enc.Hex);",
+              "pm.request.headers.upsert({ key: 'X-Timestamp', value: timestamp });",
+              "pm.request.headers.upsert({ key: 'X-Signature', value: signature });",
+              "pm.request.headers.upsert({ key: 'X-API-KEY', value: apiKey });",
+              "pm.request.headers.upsert({ key: 'X-SERVER-TOKEN', value: serverToken });",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Transaction",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/transaction/135EE81DAAA59E11648532v",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "transaction",
+            "135EE81DAAA59E11648532v"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Pre-request script to compute X-Timestamp and X-Signature (HMAC SHA256)",
+              "const secret = pm.environment.get('LYTEPAY_SECRET') || pm.collectionVariables.get('LYTEPAY_SECRET');",
+              "const apiKey = pm.environment.get('LYTEPAY_API_KEY') || pm.collectionVariables.get('LYTEPAY_API_KEY');",
+              "const serverToken = pm.environment.get('SERVER_TOKEN') || pm.collectionVariables.get('SERVER_TOKEN');",
+              "const payload = '';",
+              "const timestamp = Math.floor(Date.now() / 1000).toString();",
+              "const signature = CryptoJS.HmacSHA256(payload, secret).toString(CryptoJS.enc.Hex);",
+              "pm.request.headers.upsert({ key: 'X-Timestamp', value: timestamp });",
+              "pm.request.headers.upsert({ key: 'X-Signature', value: signature });",
+              "pm.request.headers.upsert({ key: 'X-API-KEY', value: apiKey });",
+              "pm.request.headers.upsert({ key: 'X-SERVER-TOKEN', value: serverToken });",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wallet Balance",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v2/wallet/balance",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v2",
+            "wallet",
+            "balance"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Pre-request script to compute X-Timestamp and X-Signature (HMAC SHA256)",
+              "const secret = pm.environment.get('LYTEPAY_SECRET') || pm.collectionVariables.get('LYTEPAY_SECRET');",
+              "const apiKey = pm.environment.get('LYTEPAY_API_KEY') || pm.collectionVariables.get('LYTEPAY_API_KEY');",
+              "const serverToken = pm.environment.get('SERVER_TOKEN') || pm.collectionVariables.get('SERVER_TOKEN');",
+              "const payload = '';",
+              "const timestamp = Math.floor(Date.now() / 1000).toString();",
+              "const signature = CryptoJS.HmacSHA256(payload, secret).toString(CryptoJS.enc.Hex);",
+              "pm.request.headers.upsert({ key: 'X-Timestamp', value: timestamp });",
+              "pm.request.headers.upsert({ key: 'X-Signature', value: signature });",
+              "pm.request.headers.upsert({ key: 'X-API-KEY', value: apiKey });",
+              "pm.request.headers.upsert({ key: 'X-SERVER-TOKEN', value: serverToken });",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Discos Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v2/discos/status",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v2",
+            "discos",
+            "status"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Pre-request script to compute X-Timestamp and X-Signature (HMAC SHA256)",
+              "const secret = pm.environment.get('LYTEPAY_SECRET') || pm.collectionVariables.get('LYTEPAY_SECRET');",
+              "const apiKey = pm.environment.get('LYTEPAY_API_KEY') || pm.collectionVariables.get('LYTEPAY_API_KEY');",
+              "const serverToken = pm.environment.get('SERVER_TOKEN') || pm.collectionVariables.get('SERVER_TOKEN');",
+              "const payload = '';",
+              "const timestamp = Math.floor(Date.now() / 1000).toString();",
+              "const signature = CryptoJS.HmacSHA256(payload, secret).toString(CryptoJS.enc.Hex);",
+              "pm.request.headers.upsert({ key: 'X-Timestamp', value: timestamp });",
+              "pm.request.headers.upsert({ key: 'X-Signature', value: signature });",
+              "pm.request.headers.upsert({ key: 'X-API-KEY', value: apiKey });",
+              "pm.request.headers.upsert({ key: 'X-SERVER-TOKEN', value: serverToken });",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions List",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v2/transactions?limit=50&page=1&start=2021-09-01&end=2021-09-30",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v2",
+            "transactions"
+          ],
+          "query": [
+            {
+              "key": "limit",
+              "value": "50"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "start",
+              "value": "2021-09-01"
+            },
+            {
+              "key": "end",
+              "value": "2021-09-30"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Pre-request script to compute X-Timestamp and X-Signature (HMAC SHA256)",
+              "const secret = pm.environment.get('LYTEPAY_SECRET') || pm.collectionVariables.get('LYTEPAY_SECRET');",
+              "const apiKey = pm.environment.get('LYTEPAY_API_KEY') || pm.collectionVariables.get('LYTEPAY_API_KEY');",
+              "const serverToken = pm.environment.get('SERVER_TOKEN') || pm.collectionVariables.get('SERVER_TOKEN');",
+              "const payload = '';",
+              "const timestamp = Math.floor(Date.now() / 1000).toString();",
+              "const signature = CryptoJS.HmacSHA256(payload, secret).toString(CryptoJS.enc.Hex);",
+              "pm.request.headers.upsert({ key: 'X-Timestamp', value: timestamp });",
+              "pm.request.headers.upsert({ key: 'X-Signature', value: signature });",
+              "pm.request.headers.upsert({ key: 'X-API-KEY', value: apiKey });",
+              "pm.request.headers.upsert({ key: 'X-SERVER-TOKEN', value: serverToken });",
+              ""
+            ]
+          }
+        }
+      ]
     }
   ]
 }
