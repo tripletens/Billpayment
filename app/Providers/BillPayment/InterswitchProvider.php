@@ -89,6 +89,11 @@ class InterswitchProvider implements BillPaymentProviderInterface
         return 'interswitch';
     }
 
+    public function getReliabilityIndex(): array
+    {
+        return [];
+    }
+
     protected function getAccessToken(): string
     {
         $response = Http::asForm()

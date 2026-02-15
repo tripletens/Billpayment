@@ -128,4 +128,121 @@ class BuyPowerProvider implements BillPaymentProviderInterface
     {
         return 'buypower';
     }
+
+    public function getReliabilityIndex(): array
+    {
+        Log::info('BuyPower Reliability Index Request', [
+            'url' => $this->baseUrl . '/reliability-index',
+        ]);
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->token,
+            ])->get($this->baseUrl . '/reliability-index');
+
+            $result = $response->json() ?? [];
+
+            Log::info('BuyPower Reliability Index Response', [
+                'status' => $response->status(),
+                'body' => $result
+            ]);
+
+            return $result['data'] ?? $result;
+        } catch (\Exception $e) {
+            Log::error('BuyPower Reliability Index Error', [
+                'message' => $e->getMessage()
+            ]);
+            return [];
+        }
+    }
+
+    public function getTariff(array $params): array
+    {
+        Log::info('BuyPower Get Tariff Request', [
+            'url' => $this->baseUrl . '/tariff',
+            'params' => $params
+        ]);
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->token,
+            ])->get($this->baseUrl . '/tariff', $params);
+
+            $result = $response->json() ?? [];
+
+            Log::info('BuyPower Get Tariff Response', [
+                'status' => $response->status(),
+                'body' => $result
+            ]);
+
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('BuyPower Get Tariff Error', [
+                'message' => $e->getMessage()
+            ]);
+            return ['status' => false, 'message' => 'Failed to fetch tariffs'];
+        }
+    }
+
+    public function getBouquets(array $params): array
+    {
+        Log::info('BuyPower Get Bouquets Request', [
+            'url' => $this->baseUrl . '/tv/bouquets',
+            'params' => $params
+        ]);
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->token,
+            ])->get($this->baseUrl . '/tv/bouquets', $params);
+
+            $result = $response->json() ?? [];
+
+            Log::info('BuyPower Get Bouquets Response', [
+                'status' => $response->status(),
+                'body' => $result
+            ]);
+
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('BuyPower Get Bouquets Error', [
+                'message' => $e->getMessage()
+            ]);
+            return ['status' => false, 'message' => 'Failed to fetch bouquets'];
+        }
+    }
+
+    public function getDataPlans(array $params): array
+    {
+        // Ensure vertical is set to DATA as per BuyPower requirements
+        $params['vertical'] = 'DATA';
+
+        Log::info('BuyPower Get Data Plans Request', [
+            'url' => $this->baseUrl . '/tariff',
+            'params' => $params
+        ]);
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->token,
+            ])->get($this->baseUrl . '/tariff', $params);
+
+            $result = $response->json() ?? [];
+
+            Log::info('BuyPower Get Data Plans Response', [
+                'status' => $response->status(),
+                'body' => $result
+            ]);
+
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('BuyPower Get Data Plans Error', [
+                'message' => $e->getMessage()
+            ]);
+            return ['status' => false, 'message' => 'Failed to fetch data plans'];
+        }
+    }
 }
+
+
+

@@ -27,4 +27,27 @@ interface BillPaymentProviderInterface
      * Get the provider name.
      */
     public function getName(): string;
+
+    /**
+     * Get provider reliability index.
+     */
+    public function getReliabilityIndex(): array;
+
+    /**
+     * Get tariffs (price list) for a service.
+     */
+    public function getTariff(array $params): array;
+
+    /**
+     * Get TV bouquets/packages.
+     */
+    public function getBouquets(array $params): array;
+
+    /**
+     * Get Data plans/bundles.
+     */
+    public function getDataPlans(array $params): array;
 }
+
+
+

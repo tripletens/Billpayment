@@ -79,6 +79,11 @@ class VTPassProvider implements BillPaymentProviderInterface
         return 'vtpass';
     }
 
+    public function getReliabilityIndex(): array
+    {
+        return [];
+    }
+
     /**
      * Map disco codes from internal format to VTPass service IDs.
      */

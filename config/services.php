@@ -61,4 +61,11 @@ return [
         'secret' => env('AWS_SES_SECRET'),
         'region' => env('AWS_SES_REGION', 'us-east-1'),
     ],
+
+    'paystack' => [
+        'secret_key' => env('APP_ENV') === 'production' ? env('PAYSTACK_LIVE_SECRET_KEY') : env('PAYSTACK_TEST_SECRET_KEY'),
+        'public_key' => env('APP_ENV') === 'production' ? env('PAYSTACK_LIVE_PUBLIC_KEY') : env('PAYSTACK_TEST_PUBLIC_KEY'),
+        'base_url' => 'https://api.paystack.co',
+    ],
 ];
+

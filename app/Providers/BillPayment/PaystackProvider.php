@@ -90,4 +90,9 @@ class PaystackProvider implements BillPaymentProviderInterface
     {
         return 'paystack';
     }
+
+    public function getReliabilityIndex(): array
+    {
+        return [];
+    }
 }
