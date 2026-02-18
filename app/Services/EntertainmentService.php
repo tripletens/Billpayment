@@ -26,16 +26,14 @@ class EntertainmentService
 
         try {
             // 2. Process Purchase via Provider
-            $provider = $this->providerFactory->make($provider ?? $data['provider'] ?? null);
-            // $result = $provider->purchaseSubscription($data); // Method to be implemented in provider
+            $providerInstance = $this->providerFactory->make($provider ?? $data['provider'] ?? null);
+            $result = $providerInstance->vendEntertainment($data);
             
-            // Mocking success for now
-            $result = ['status' => true, 'message' => 'Subscription successful'];
-
             // 3. Update Transaction
-            if ($result['status']) {
+            if (($result['status'] ?? false) === true || ($result['responseCode'] ?? '') === '00' || ($result['responseCode'] ?? 0) == 200) {
                 $transaction->update(['status' => 'success']);
             } else {
+
                 $transaction->update(['status' => 'failed']);
             }
             

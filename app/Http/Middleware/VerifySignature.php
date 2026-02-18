@@ -21,23 +21,22 @@ class VerifySignature
         $secret = config('services.lytepay.secret');
         $signature = $request->header('X-Signature');
         $timestamp = $request->header('X-Timestamp');
-        $payload = $request->getContent();
-
-        if (! $signature || ! $timestamp) {
-            return $this->error('Missing signature or timestamp headers.', 400);
-        }
-
-        if (! is_numeric($timestamp)) {
-            return $this->error('Invalid X-Timestamp format.', 400);
-        }
-
-        // Prevent Replay Attacks: Check if timestamp is within 5 minutes
-        if (abs(time() - (int) $timestamp) > 300) {
-            return $this->error('Request timestamp expired.', 403);
-        }
-
         // Verify Signature
+        if ($request->isMethod('get')) {
+            $payload = $request->getQueryString();
+        } else {
+            $payload = $request->getContent();
+        }
+
         $expectedSignature = hash_hmac('sha256', $payload, $secret);
+
+        \Log::info('Signature Debug', [
+            'provided' => $signature,
+            'expected' => $expectedSignature,
+            'payload' => $payload,
+            'method' => $request->method(),
+            'url' => $request->fullUrl(),
+        ]);
 
         if (! hash_equals($expectedSignature, (string) $signature)) {
             return $this->error('Invalid request signature.', 403);

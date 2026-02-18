@@ -28,19 +28,22 @@ class TelecomsService
 
         try {
             // 2. Process via Provider
-            // $provider = $this->providerFactory->make($data['provider'] ?? null);
+            $provider = $this->providerFactory->make($data['provider'] ?? null);
+            $result = $provider->vendTelecoms($data);
             
-            // Mocking success
-            $result = ['status' => true, 'message' => ucfirst($type) . ' purchase successful'];
-
             // 3. Update Transaction
-            $transaction->update(['status' => 'success']);
+            if (($result['status'] ?? false) === true || ($result['responseCode'] ?? '') === '00' || ($result['responseCode'] ?? 0) == 200) {
+                $transaction->update(['status' => 'success']);
+            } else {
+                $transaction->update(['status' => 'failed']);
+            }
             
             $meta = $transaction->meta ?? [];
             $meta['api_response'] = $result;
             $transaction->update(['meta' => $meta]);
 
             return $transaction;
+
 
         } catch (\Exception $e) {
             $transaction->update(['status' => 'failed']);

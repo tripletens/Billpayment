@@ -242,7 +242,76 @@ class BuyPowerProvider implements BillPaymentProviderInterface
             return ['status' => false, 'message' => 'Failed to fetch data plans'];
         }
     }
+
+    public function vendTelecoms(array $data): array
+    {
+        $payload = [
+            'orderId' => \Illuminate\Support\Str::uuid()->toString(),
+            'phone' => $data['phone'] ?? $data['phone_number'],
+            'amount' => (string) $data['amount'],
+            'vertical' => strtoupper($data['type']), // AIRTIME or DATA
+            'provider' => strtoupper($data['network'] ?? $data['provider']),
+            'paymentType' => 'B2B',
+            'email' => $data['email'] ?? 'support@lytbills.com',
+        ];
+
+        if ($payload['vertical'] === 'DATA') {
+            $payload['dataCode'] = $data['data_plan'] ?? $data['package'];
+        }
+
+        Log::info('BuyPower Telecoms Vend Request', [
+            'url' => $this->baseUrl . '/vend',
+            'payload' => $payload
+        ]);
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->post($this->baseUrl . '/vend', $payload);
+
+        $result = $response->json() ?? [];
+
+        Log::info('BuyPower Telecoms Vend Response', [
+            'status' => $response->status(),
+            'body' => $result
+        ]);
+
+        return $result;
+    }
+
+    public function vendEntertainment(array $data): array
+    {
+        $payload = [
+            'orderId' => \Illuminate\Support\Str::uuid()->toString(),
+            'phone' => $data['phone'] ?? '',
+            'amount' => (string) $data['amount'],
+            'vertical' => 'TV',
+            'provider' => strtoupper($data['provider']),
+            'paymentType' => 'B2B',
+            'smartCardNumber' => $data['smartcard_number'] ?? $data['smartCardNumber'],
+            'email' => $data['email'] ?? 'support@lytbills.com',
+            'packageCode' => $data['package'] ?? $data['packageCode'],
+        ];
+
+        Log::info('BuyPower Entertainment Vend Request', [
+            'url' => $this->baseUrl . '/vend',
+            'payload' => $payload
+        ]);
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->post($this->baseUrl . '/vend', $payload);
+
+        $result = $response->json() ?? [];
+
+        Log::info('BuyPower Entertainment Vend Response', [
+            'status' => $response->status(),
+            'body' => $result
+        ]);
+
+        return $result;
+    }
 }
+
 
 
 

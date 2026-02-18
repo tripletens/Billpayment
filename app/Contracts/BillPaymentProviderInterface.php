@@ -47,7 +47,14 @@ interface BillPaymentProviderInterface
      * Get Data plans/bundles.
      */
     public function getDataPlans(array $params): array;
+
+    /**
+     * Vend telecoms (airtime/data).
+     */
+    public function vendTelecoms(array $data): array;
+
+    /**
+     * Vend entertainment (cable tv).
+     */
+    public function vendEntertainment(array $data): array;
 }
-
-
-
