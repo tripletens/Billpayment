@@ -65,16 +65,24 @@ Route::prefix('v2')->middleware(['verify.server.token', 'verify.api.key', 'verif
     Route::get('/wallet/balance', [AdminController::class, 'walletBalance']);
     Route::get('/discos/status', [AdminController::class, 'discosStatus']);
     Route::get('/transactions', [AdminTransactionController::class, 'transactions']);
+    Route::get('/provider/transactions', [AdminController::class, 'providerTransactions']);
+    
+    Route::get('/admin/provider', [AdminController::class, 'getProvider']);
+    Route::post('/admin/provider', [AdminController::class, 'updateProvider']);
 });
 
 // Paystack Payment Routes
 Route::prefix('v1')->middleware(['verify.server.token', 'verify.api.key', 'verify.signature'])->group(function () {
     Route::post('/payment/initialize', [\App\Http\Controllers\API\PaymentController::class, 'initialize']);
+    Route::get('/cable/plans', [\App\Http\Controllers\API\ProviderController::class, 'cablePlans']);
 });
 
 Route::post('/payment/webhook', [\App\Http\Controllers\API\PaymentController::class, 'webhook'])->name('payment.webhook');
-Route::get('/payment/callback', function() {
-    return response()->json(['message' => 'Payment successful']);
-})->name('payment.callback');
+Route::get('/payment/callback', [\App\Http\Controllers\API\PaymentController::class, 'callback'])->name('payment.callback');
 
-
+// User Transaction & Dashboard Routes
+Route::prefix('v1/user')->middleware(['verify.server.token', 'verify.api.key', 'verify.signature'])->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\API\CustomerDashboardController::class, 'index']);
+    Route::get('/transactions', [\App\Http\Controllers\API\TransactionController::class, 'index']);
+    Route::get('/transactions/{reference}', [\App\Http\Controllers\API\TransactionController::class, 'show']);
+});

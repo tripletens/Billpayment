@@ -69,23 +69,61 @@ class ProviderController extends Controller
     }
 
     /**
-     * Get Data plans (bundles)
+     * Get Data plans (bundles).
+     *
+     * Usage: GET /v2/data/plans?network=MTN
      */
     public function dataPlans(): JsonResponse
     {
         try {
-            $provider = request()->header('X-BILL-PROVIDER') ?? request()->input('provider') ?? 'buypower';
-            
-            $billPaymentProvider = $this->providerFactory->make($provider);
-            $data = $billPaymentProvider->getDataPlans(request()->all());
+            $billProvider = request()->header('X-BILL-PROVIDER') ?? request()->input('provider') ?? 'buypower';
+            $network = strtoupper(request()->query('network', 'MTN'));
 
-            return response()->json($data);
+            $billPaymentProvider = $this->providerFactory->make($billProvider);
+            $data = $billPaymentProvider->getDataPlans([
+                'vertical' => 'DATA',
+                'provider' => $network,
+            ]);
+
+            return $this->success($data['data'] ?? $data, "Data plans for {$network} fetched successfully.");
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
+            return $this->error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get cable TV plans/packages for a given provider (DSTV, GOTV, STARTIMES).
+     *
+     * Usage:
+     *   GET /v1/cable/plans?disco=DSTV
+     *   GET /v1/cable/plans?disco=GOTV
+     *   GET /v1/cable/plans?disco=STARTIMES
+     */
+    public function cablePlans(): JsonResponse
+    {
+        try {
+            $billProvider = request()->header('X-BILL-PROVIDER') ?? request()->input('provider') ?? 'buypower';
+            $disco = strtoupper(request()->query('disco', 'DSTV'));
+
+            $billPaymentProvider = $this->providerFactory->make($billProvider);
+
+            // DSTV uses the tariff endpoint, GOTV & STARTIMES use the bouquets endpoint
+            if ($disco === 'DSTV') {
+                $data = $billPaymentProvider->getTariff([
+                    'vertical' => 'TV',
+                    'provider' => 'DSTV',
+                ]);
+            } else {
+                $data = $billPaymentProvider->getBouquets([
+                    'vertical' => 'TV',
+                    'provider' => 'DSTV',
+                    'type' => $disco,
+                ]);
+            }
+
+            return $this->success($data['data'] ?? $data, "Cable plans for {$disco} fetched successfully.");
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 500);
         }
     }
 }
-
-
-
-

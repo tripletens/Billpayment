@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\DTOs\ElectricityVendDTO;
 use App\Http\Controllers\Controller;
+use App\Jobs\SendPaymentReceiptJob;
 use App\Models\Transaction;
 use App\Services\ElectricityService;
 use App\Services\EntertainmentService;
@@ -91,6 +92,93 @@ class PaymentController extends Controller
     }
 
     /**
+     * Handle Paystack Payment Callback (redirect after payment).
+     *
+     * Paystack redirects here with ?trxref=XXX&reference=XXX after the user
+     * completes payment on the Paystack checkout page.
+     */
+    public function callback(Request $request)
+    {
+        $reference = $request->query('reference') ?? $request->query('trxref');
+
+        if (! $reference) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No payment reference provided.',
+            ], 400);
+        }
+
+        // Verify the payment with Paystack
+        $verification = $this->paystackService->verifyTransaction($reference);
+
+        if (! ($verification['status'] ?? false)) {
+            Log::warning('Paystack callback: verification failed', [
+                'reference' => $reference,
+                'response' => $verification,
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => $verification['message'] ?? 'Payment verification failed.',
+            ], 402);
+        }
+
+        $paymentData = $verification['data'];
+
+        if ($paymentData['status'] !== 'success') {
+            Log::warning('Paystack callback: payment not successful', [
+                'reference' => $reference,
+                'payment_status' => $paymentData['status'],
+                'gateway_response' => $paymentData['gateway_response'] ?? null,
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Payment was not successful: '.($paymentData['gateway_response'] ?? $paymentData['status']),
+                'data' => [
+                    'reference' => $reference,
+                    'payment_status' => $paymentData['status'],
+                    'gateway_response' => $paymentData['gateway_response'] ?? null,
+                ],
+            ], 402);
+        }
+
+        // Find the local transaction record
+        $transaction = Transaction::where('reference', $reference)->first();
+
+        if (! $transaction) {
+            Log::error('Paystack callback: transaction not found', ['reference' => $reference]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Transaction record not found for reference: '.$reference,
+            ], 404);
+        }
+
+        // Idempotency: already processed
+        if ($transaction->status !== 'pending_payment') {
+            return response()->json([
+                'status' => true,
+                'message' => 'Payment already processed.',
+                'data' => [
+                    'reference' => $reference,
+                    'transaction_status' => $transaction->status,
+                ],
+            ]);
+        }
+
+        // Process the successful payment (updates status + triggers bill vending)
+        $this->processSuccessfulPayment($transaction, $paymentData);
+
+        Log::info('Paystack callback: payment verified and processed', ['reference' => $reference]);
+
+        // Redirect to frontend receipt page
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:8001'); // Fallback to 8001 for customer-portal
+
+        return redirect($frontendUrl.'/bills/receipt?reference='.$reference);
+    }
+
+    /**
      * Handle Paystack Webhook.
      */
     public function webhook(Request $request)
@@ -129,8 +217,18 @@ class PaymentController extends Controller
             'meta' => array_merge($transaction->meta, ['payment_details' => $paymentData]),
         ]);
 
+        // ── Dispatch email + SMS receipt job ──────────────────────────────────
+        $billData = $transaction->meta['bill_data'] ?? [];
+        $user = [
+            'email' => $paymentData['customer']['email'] ?? $billData['email'] ?? '',
+            'first_name' => $paymentData['customer']['first_name'] ?? $billData['customer_name'] ?? 'Customer',
+            'last_name' => $paymentData['customer']['last_name'] ?? '',
+            'phone' => $billData['phone'] ?? null,
+        ];
+
+        SendPaymentReceiptJob::dispatch($transaction, $user, $paymentData);
+
         try {
-            $billData = $transaction->meta['bill_data'];
             $vendAmount = $transaction->meta['original_amount'] ?? $transaction->amount;
 
             switch ($transaction->type) {
@@ -143,17 +241,17 @@ class PaymentController extends Controller
                         $billData['phone'] ?? '',
                         $billData['email'] ?? ''
                     );
-                    $this->electricityService->vend($dto, $transaction->provider_name);
+                    $this->electricityService->vend($dto, $transaction->provider_name, $transaction);
                     break;
 
                 case 'telecoms':
                     $vendingData = array_merge($billData, ['amount' => $vendAmount]);
-                    $this->telecomsService->purchaseAirtimeOrData($vendingData, $transaction->provider_name);
+                    $this->telecomsService->purchaseAirtimeOrData($vendingData, $transaction->provider_name, $transaction);
                     break;
 
                 case 'entertainment':
                     $vendingData = array_merge($billData, ['amount' => $vendAmount]);
-                    $this->entertainmentService->purchaseSubscription($vendingData, $transaction->provider_name);
+                    $this->entertainmentService->purchaseSubscription($vendingData, $transaction->provider_name, $transaction);
                     break;
             }
 
@@ -164,8 +262,6 @@ class PaymentController extends Controller
                 'reference' => $transaction->reference,
                 'error' => $e->getMessage(),
             ]);
-            // Transaction status will be updated by the service's vend method usually,
-            // but we might want to flag this specifically as 'payment_success_vending_failed'
         }
     }
 }

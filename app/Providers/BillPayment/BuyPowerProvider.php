@@ -129,6 +129,82 @@ class BuyPowerProvider implements BillPaymentProviderInterface
         return 'buypower';
     }
 
+    /**
+     * Get BuyPower wallet balance.
+     */
+    public function getWalletBalance(): array
+    {
+        Log::info('BuyPower Wallet Balance Request', [
+            'url' => $this->baseUrl . '/wallet/balance',
+        ]);
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->token,
+            ])->get($this->baseUrl . '/wallet/balance');
+
+            $result = $response->json() ?? [];
+
+            Log::info('BuyPower Wallet Balance Response', [
+                'status' => $response->status(),
+                'body' => $result
+            ]);
+
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('BuyPower Wallet Balance Error', [
+                'message' => $e->getMessage()
+            ]);
+            return ['status' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get BuyPower transaction history.
+     */
+    public function getTransactionHistory(array $params = []): array
+    {
+        Log::info('BuyPower Transaction History Request', [
+            'url' => $this->baseUrl . '/transactions',
+            'params' => $params,
+        ]);
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->token,
+            ])->get($this->baseUrl . '/transactions', $params);
+
+            $result = $response->json() ?? [];
+
+            Log::info('BuyPower Transaction History Response', [
+                'status' => $response->status(),
+                'count' => count($result['data'] ?? []),
+            ]);
+
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('BuyPower Transaction History Error', [
+                'message' => $e->getMessage()
+            ]);
+            return ['status' => false, 'message' => $e->getMessage()];
+        }
+    }
+    /**
+     * Map network names to BuyPower disco codes for VTU.
+     */
+    protected function mapNetwork(string $network): string
+    {
+        $mapping = [
+            'MTN'      => 'MTN',
+            'GLO'      => 'GLO',
+            'AIRTEL'   => 'AIRTEL',
+            '9MOBILE'  => '9MOBILE',
+            'ETISALAT' => '9MOBILE',
+        ];
+
+        return $mapping[strtoupper($network)] ?? strtoupper($network);
+    }
+
     public function getReliabilityIndex(): array
     {
         Log::info('BuyPower Reliability Index Request', [
@@ -245,18 +321,26 @@ class BuyPowerProvider implements BillPaymentProviderInterface
 
     public function vendTelecoms(array $data): array
     {
+        $network = strtoupper($data['network'] ?? $data['provider'] ?? '');
+        $type = strtolower($data['type'] ?? 'airtime');
+        $isData = $type === 'data';
+
         $payload = [
             'orderId' => \Illuminate\Support\Str::uuid()->toString(),
-            'phone' => $data['phone'] ?? $data['phone_number'],
-            'amount' => (string) $data['amount'],
-            'vertical' => strtoupper($data['type']), // AIRTIME or DATA
-            'provider' => strtoupper($data['network'] ?? $data['provider']),
+            'meter' => $data['phone_number'] ?? $data['phone'],
+            'disco' => $this->mapNetwork($network),
+            'phone' => $data['phone_number'] ?? $data['phone'],
             'paymentType' => 'B2B',
+            'vendType' => 'PREPAID',
+            'vertical' => $isData ? 'DATA' : 'VTU',
+            'amount' => (string) $data['amount'],
             'email' => $data['email'] ?? 'support@lytbills.com',
+            'name' => $data['customer_name'] ?? 'Customer',
         ];
 
-        if ($payload['vertical'] === 'DATA') {
-            $payload['dataCode'] = $data['data_plan'] ?? $data['package'];
+        // Add tariffClass for data plans
+        if ($isData && !empty($data['tariff_class'] ?? $data['tariffClass'] ?? $data['data_plan'])) {
+            $payload['tariffClass'] = $data['tariff_class'] ?? $data['tariffClass'] ?? $data['data_plan'];
         }
 
         Log::info('BuyPower Telecoms Vend Request', [
@@ -282,14 +366,15 @@ class BuyPowerProvider implements BillPaymentProviderInterface
     {
         $payload = [
             'orderId' => \Illuminate\Support\Str::uuid()->toString(),
-            'phone' => $data['phone'] ?? '',
-            'amount' => (string) $data['amount'],
-            'vertical' => 'TV',
-            'provider' => strtoupper($data['provider']),
+            'meter' => $data['smartcard_number'] ?? $data['smartCardNumber'] ?? $data['meter'],
+            'disco' => strtoupper($data['disco'] ?? $data['provider'] ?? 'DSTV'),
+            'phone' => $data['phone'] ?? $data['phone_number'] ?? '',
             'paymentType' => 'B2B',
-            'smartCardNumber' => $data['smartcard_number'] ?? $data['smartCardNumber'],
+            'vendType' => 'PREPAID',
+            'vertical' => 'TV',
+            'amount' => (string) $data['amount'],
             'email' => $data['email'] ?? 'support@lytbills.com',
-            'packageCode' => $data['package'] ?? $data['packageCode'],
+            'name' => $data['customer_name'] ?? $data['name'] ?? 'Customer',
         ];
 
         Log::info('BuyPower Entertainment Vend Request', [

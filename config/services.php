@@ -67,5 +67,12 @@ return [
         'public_key' => env('APP_ENV') === 'production' ? env('PAYSTACK_LIVE_PUBLIC_KEY') : env('PAYSTACK_TEST_PUBLIC_KEY'),
         'base_url' => 'https://api.paystack.co',
     ],
+
+    'termii' => [
+        'api_key'   => env('TERMII_API_KEY'),
+        'sender_id' => env('TERMII_SENDER_ID', 'BillPay'),
+        'enabled'   => env('TERMII_ENABLED', false),
+        'base_url'  => 'https://api.ng.termii.com/api',
+    ],
 ];
 

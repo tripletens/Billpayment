@@ -23,7 +23,7 @@ class BillPaymentProviderFactory
      */
     public function make(?string $provider = null): BillPaymentProviderInterface
     {
-        $provider = $provider ?? config('billpayment.provider', 'buypower');
+        $provider = $provider ?? \App\Models\Setting::get('bill_payment_provider', config('billpayment.provider', 'buypower'));
 
         if (!isset($this->providers[$provider])) {
             throw new InvalidArgumentException("Unsupported bill payment provider: {$provider}");

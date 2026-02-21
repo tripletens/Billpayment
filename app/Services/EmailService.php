@@ -30,9 +30,8 @@ class EmailService
     /**
      * Send email with raw data (through configurable providers).
      *
-     * @param array $data Email data
-     * @param string|null $provider Provider name
-     * @return bool
+     * @param  array  $data  Email data
+     * @param  string|null  $provider  Provider name
      */
     public function sendRaw(array $data, ?string $provider = null): bool
     {
@@ -52,6 +51,7 @@ class EmailService
             return $this->mailServiceFactory->make('laravel_mail')->send($data);
         }
     }
+
     /**
      * Send a vend (bill payment) notification email to user.
      */
@@ -126,6 +126,57 @@ class EmailService
             'from' => [
                 'email' => 'noreply@lythubtechnologies.com',
                 'name' => 'BillPayment Service',
+            ],
+        ], $provider);
+    }
+
+    /**
+     * Send transaction receipt email with a PDF attachment.
+     *
+     * @param  array|object  $user  User info (array or model)
+     * @param  array  $transactionData  Transaction data for the PDF
+     * @param  string  $pdfPath  Absolute path to the generated PDF file
+     * @param  string|null  $provider  Optional mail provider override
+     */
+    public function sendReceiptWithPdf(
+        array|object $user,
+        array $transactionData,
+        string $pdfPath,
+        ?string $provider = null
+    ): bool {
+        $email = is_array($user) ? ($user['email'] ?? '') : $user->email;
+        $name = is_array($user)
+            ? ($user['name'] ?? trim(($user['first_name'] ?? '').' '.($user['last_name'] ?? '')))
+            : trim($user->first_name.' '.$user->last_name);
+
+        $htmlContent = view('emails.pdf_receipt', [
+            'user' => $user,
+            'transaction' => $transactionData,
+        ])->render();
+
+        return $this->sendRaw([
+            'email' => $email,
+            'name' => $name,
+            'subject' => 'Your Payment Receipt — '.($transactionData['reference'] ?? ''),
+            'text' => 'Your payment was successful. Please find your receipt attached.',
+            'html' => $htmlContent,
+            'category' => 'PaymentReceipt',
+            'from' => [
+                'email' => 'noreply@lythubtechnologies.com',
+                'name' => 'BillPayment Service',
+            ],
+            'cc' => [],
+            'bcc' => [],
+            'reply_to' => [
+                'email' => 'support@lythubtechnologies.com',
+                'name' => 'Support',
+            ],
+            'attachments' => [
+                [
+                    'path' => $pdfPath,
+                    'name' => 'receipt_'.($transactionData['reference'] ?? 'payment').'.pdf',
+                    'mime' => 'application/pdf',
+                ],
             ],
         ], $provider);
     }

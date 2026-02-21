@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\DTOs\ElectricityVendDTO;
 use App\Factories\BillPaymentProviderFactory;
+use App\Models\Transaction;
 use App\Repositories\ElectricityRepository;
 use Illuminate\Support\Facades\Log;
 
@@ -14,7 +15,14 @@ class ElectricityService
         protected BillPaymentProviderFactory $providerFactory
     ) {}
 
-    public function vend(ElectricityVendDTO $dto, ?string $providerName = null)
+    /**
+     * Vend electricity.
+     *
+     * @param  ElectricityVendDTO  $dto
+     * @param  string|null         $providerName  Override provider
+     * @param  Transaction|null    $existingTransaction  If provided, update this instead of creating a new one
+     */
+    public function vend(ElectricityVendDTO $dto, ?string $providerName = null, ?Transaction $existingTransaction = null)
     {
         // Get the provider (uses default from config if not specified)
         $provider = $this->providerFactory->make($providerName);
@@ -25,28 +33,30 @@ class ElectricityService
             'provider' => $provider->getName()
         ]);
 
-        // 1. Create local transaction with 'pending' status
-        $transaction = $this->repository->storeTransaction([
-            'reference' => uniqid('ref_'),
-            'type' => 'electricity',
-            'amount' => $dto->amount,
-            'status' => 'pending',
-            'meta' => [
-                'meter_number' => $dto->meterNumber,
-                'disco' => $dto->disco,
-                'phone' => $dto->phone,
-                'customer_name' => $dto->customerName,
-                'provider' => $provider->getName(),
-            ],
-        ]);
+        // Use existing transaction or create a new one
+        if ($existingTransaction) {
+            $transaction = $existingTransaction;
+        } else {
+            $transaction = $this->repository->storeTransaction([
+                'reference' => uniqid('ref_'),
+                'type' => 'electricity',
+                'amount' => $dto->amount,
+                'status' => 'pending',
+                'meta' => [
+                    'meter_number' => $dto->meterNumber,
+                    'disco' => $dto->disco,
+                    'phone' => $dto->phone,
+                    'customer_name' => $dto->customerName,
+                    'provider' => $provider->getName(),
+                ],
+            ]);
+        }
 
         try {
-            // 2. Use the provider to vend electricity
+            // Use the provider to vend electricity
             $result = $provider->vendElectricity($dto);
 
-            // dd($result);
-
-            // 3. Update Transaction Status based on response
+            // Update Transaction Status based on response
             if (($result['status'] ?? false) === true || ($result['responseCode'] ?? '') === '00' || ($result['responseCode'] ?? 0) == 200) {
                 $transaction->status = 'success';
             } else {
@@ -59,11 +69,17 @@ class ElectricityService
                 'response_message' => $result['message'] ?? 'No message'
             ]);
 
-            // Append result to existing meta
+            // Append vend result to existing meta
             $meta = $transaction->meta ?? [];
-            $meta['api_response'] = $result;
-            $transaction->meta = $meta;
+            $meta['vend_response'] = $result;
+            $meta['vend_status'] = $transaction->status;
 
+            // Extract the electricity token for easy access
+            $meta['electricity_token'] = $result['data']['token']
+                ?? $result['token']
+                ?? null;
+
+            $transaction->meta = $meta;
             $transaction->save();
 
             return $transaction;
@@ -76,7 +92,7 @@ class ElectricityService
 
             $transaction->status = 'failed';
             $meta = $transaction->meta ?? [];
-            $meta['error'] = $e->getMessage();
+            $meta['vend_error'] = $e->getMessage();
             $transaction->meta = $meta;
             $transaction->save();
 

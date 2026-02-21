@@ -15,6 +15,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Services\MailTrap\MailTrapService::class, function ($app) {
             return new \App\Services\MailTrap\MailTrapService($app->make(\App\Services\EmailService::class));
         });
+
+        // Bind TransactionRepositoryInterface to its concrete implementation.
+        $this->app->bind(
+            \App\Contracts\TransactionRepositoryInterface::class,
+            \App\Repositories\TransactionRepository::class
+        );
     }
 
     /**

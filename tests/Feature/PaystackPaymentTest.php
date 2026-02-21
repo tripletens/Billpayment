@@ -74,8 +74,7 @@ class PaystackPaymentTest extends TestCase
 
         $this->assertDatabaseHas('transactions', [
             'status' => 'pending_payment',
-            'amount' => 5000,
-            'type' => 'electricity',
+            'type'   => 'electricity',
         ]);
     }
 
@@ -127,5 +126,87 @@ class PaystackPaymentTest extends TestCase
             'amount' => 5000,
             // 'status' => 'success', // Might be pending if mocked, but usually 'success' or 'failed'
         ]);
+    }
+
+    public function test_callback_verifies_and_processes_payment()
+    {
+        $reference = 'PAY_CALLBACK_TEST_1';
+
+        // Create a pending transaction
+        $transaction = Transaction::create([
+            'reference'   => $reference,
+            'type'        => 'electricity',
+            'amount'      => 5100,
+            'status'      => 'pending_payment',
+            'meta'        => [
+                'bill_data' => [
+                    'meter_number'  => '1234567890',
+                    'disco'         => 'AEDC',
+                    'customer_name' => 'Test User',
+                    'phone'         => '08012345678',
+                ],
+                'original_amount' => 5000,
+            ],
+        ]);
+
+        // Mock Paystack verification returning success
+        Http::fake([
+            'https://api.paystack.co/transaction/verify/' . $reference => Http::response([
+                'status'  => true,
+                'message' => 'Verification successful',
+                'data'    => [
+                    'status'           => 'success',
+                    'reference'        => $reference,
+                    'amount'           => 510000, // kobo
+                    'currency'         => 'NGN',
+                    'channel'          => 'card',
+                    'gateway_response' => 'Successful',
+                    'paid_at'          => '2024-08-22T09:15:02.000Z',
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->getJson('/api/payment/callback?reference=' . $reference);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('status', true)
+            ->assertJsonStructure(['data' => ['reference', 'amount', 'transaction_id']]);
+
+        $this->assertEquals('paid', $transaction->fresh()->status);
+    }
+
+    public function test_callback_handles_failed_payment_status()
+    {
+        $reference = 'PAY_CALLBACK_TEST_2';
+
+        $transaction = Transaction::create([
+            'reference'   => $reference,
+            'type'        => 'electricity',
+            'amount'      => 5100,
+            'status'      => 'pending_payment',
+            'meta'        => ['bill_data' => ['meter_number' => '111', 'disco' => 'AEDC']],
+        ]);
+
+        // Mock Paystack responding with a failed payment
+        Http::fake([
+            'https://api.paystack.co/transaction/verify/' . $reference => Http::response([
+                'status'  => true,
+                'message' => 'Verification successful',
+                'data'    => [
+                    'status'           => 'failed',
+                    'reference'        => $reference,
+                    'amount'           => 510000,
+                    'gateway_response' => 'Declined',
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->getJson('/api/payment/callback?reference=' . $reference);
+
+        $response->assertStatus(402)
+            ->assertJsonPath('status', false);
+
+        // Transaction should remain pending_payment
+        $this->assertEquals('pending_payment', $transaction->fresh()->status);
     }
 }
